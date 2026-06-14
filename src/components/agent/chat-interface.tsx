@@ -153,15 +153,37 @@ function MessageBubble({ message }: { message: Message }) {
   );
 }
 
+const STORAGE_KEY = "axiom-chat-history";
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Load saved messages on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setMessages(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  // Save messages to localStorage on every change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  function clearHistory() {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([]);
+  }
 
   async function send(text?: string) {
     const content = (text ?? input).trim();
@@ -212,7 +234,14 @@ export default function ChatInterface() {
             ))}
           </div>
         </div>
-        <div className="mt-auto border-t border-rim/30 pt-5">
+        <div className="mt-auto border-t border-rim/30 pt-5 flex flex-col gap-3">
+          <button
+            onClick={clearHistory}
+            disabled={messages.length === 0}
+            className="w-full text-[10px] font-mono text-pulse/50 hover:text-pulse border border-rim/20 hover:border-pulse/30 rounded-lg py-2 transition-all disabled:opacity-20"
+          >
+            Clear History
+          </button>
           <p className="text-[10px] font-mono text-dim/30 leading-relaxed">
             Powered by Groq · gpt-oss-120B<br />Finance &amp; Data Science Expert
           </p>
